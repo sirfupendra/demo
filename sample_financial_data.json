@@ -1,0 +1,37 @@
+[
+  {
+    "Date": "2026-01-01",
+    "Amount": 5000.00,
+    "Description": "Monthly Salary",
+    "Category": "Income",
+    "Account": "Checking Account"
+  },
+  {
+    "Date": "2026-01-02",
+    "Amount": -1200.00,
+    "Description": "Rent Payment",
+    "Category": "Expense",
+    "Account": "Checking Account"
+  },
+  {
+    "Date": "2026-01-03",
+    "Amount": -150.50,
+    "Description": "Grocery Shopping",
+    "Category": "Expense",
+    "Account": "Credit Card"
+  },
+  {
+    "Date": "2026-01-05",
+    "Amount": -75.00,
+    "Description": "Gas Station",
+    "Category": "Expense",
+    "Account": "Credit Card"
+  },
+  {
+    "Date": "2026-01-07",
+    "Amount": 2000.00,
+    "Description": "Freelance Payment",
+    "Category": "Income",
+    "Account": "Savings Account"
+  }
+]

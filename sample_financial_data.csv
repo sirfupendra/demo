@@ -1,0 +1,11 @@
+Date,Amount,Description,Category,Account
+2026-01-01,5000.00,Monthly Salary,Income,Checking Account
+2026-01-02,-1200.00,Rent Payment,Expense,Checking Account
+2026-01-03,-150.50,Grocery Shopping,Expense,Credit Card
+2026-01-05,-75.00,Gas Station,Expense,Credit Card
+2026-01-07,2000.00,Freelance Payment,Income,Savings Account
+2026-01-10,-45.00,Netflix Subscription,Expense,Credit Card
+2026-01-12,-300.00,Electricity Bill,Expense,Checking Account
+2026-01-15,-89.99,Amazon Purchase,Expense,Credit Card
+2026-01-20,-25.00,Restaurant,Expense,Credit Card
+2026-01-25,-500.00,Investment Contribution,Investment,Investment Account
