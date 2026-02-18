@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Response DTO for markdown conversion
@@ -21,4 +22,8 @@ public class MarkdownResponse {
     private LocalDateTime processedAt;
     private String fileType;
     private String status;
+    private boolean isZipArchive;
+    private List<ZipFileInfo> zipFileContents;
+    private int totalFilesInZip;
+    private int successfullyProcessedFiles;
 }

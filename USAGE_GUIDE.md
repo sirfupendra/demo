@@ -80,6 +80,13 @@ curl -X POST http://localhost:8080/api/v1/financial-data/convert \
   -H "Content-Type: multipart/form-data"
 ```
 
+**For ZIP file containing multiple files:**
+```bash
+curl -X POST http://localhost:8080/api/v1/financial-data/convert \
+  -F "file=@path/to/your/financial_data.zip" \
+  -H "Content-Type: multipart/form-data"
+```
+
 #### Using PowerShell (Windows)
 
 ```powershell
@@ -104,6 +111,8 @@ Invoke-RestMethod -Uri $uri -Method Post -Form $form
 
 ## Step 4: Understanding the Response
 
+### Single File Response
+
 The API returns a JSON response with the following structure:
 
 ```json
@@ -113,11 +122,44 @@ The API returns a JSON response with the following structure:
   "recordCount": 10,
   "processedAt": "2026-02-18T10:30:00",
   "fileType": "text/csv",
-  "status": "SUCCESS"
+  "status": "SUCCESS",
+  "isZipArchive": false
 }
 ```
 
-The `markdown` field contains the converted markdown format of your financial data.
+### ZIP File Response
+
+When uploading a ZIP file, the response includes additional information:
+
+```json
+{
+  "markdown": "# Financial Data Report - ZIP Archive\n\n...",
+  "filename": "financial_data.zip",
+  "recordCount": 25,
+  "processedAt": "2026-02-18T10:30:00",
+  "fileType": "application/zip",
+  "status": "SUCCESS",
+  "isZipArchive": true,
+  "totalFilesInZip": 3,
+  "successfullyProcessedFiles": 3,
+  "zipFileContents": [
+    {
+      "filename": "data1.csv",
+      "fileType": "CSV",
+      "recordCount": 10,
+      "processed": true
+    },
+    {
+      "filename": "data2.xlsx",
+      "fileType": "EXCEL_XLSX",
+      "recordCount": 15,
+      "processed": true
+    }
+  ]
+}
+```
+
+The `markdown` field contains the converted markdown format of your financial data. For ZIP files, it includes a summary of all files and combined records.
 
 ## Supported File Formats
 
@@ -125,6 +167,28 @@ The `markdown` field contains the converted markdown format of your financial da
 - **Excel** (.xlsx, .xls) - Microsoft Excel files
 - **JSON** (.json) - JavaScript Object Notation
 - **TXT** (.txt) - Plain text files (tab/comma/pipe delimited)
+- **ZIP** (.zip) - ZIP archives containing multiple financial data files (CSV, Excel, JSON, or TXT)
+
+## ZIP File Support
+
+The API can process ZIP archives containing multiple financial data files. The ZIP file can contain:
+- Multiple CSV files
+- Multiple Excel files (.xlsx, .xls)
+- Multiple JSON files
+- Multiple TXT files
+- A mix of different file types
+
+**How it works:**
+1. Upload a ZIP file containing your financial data files
+2. The API extracts all files from the ZIP
+3. Each file is processed according to its type
+4. All records are combined into a single markdown report
+5. The response includes details about each file processed
+
+**Benefits:**
+- Process multiple files in one request
+- Combine data from different sources
+- Get a unified report with all financial data
 
 ## File Format Examples
 

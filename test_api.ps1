@@ -70,4 +70,45 @@ if (Test-Path "sample_financial_data.json") {
 }
 
 Write-Host ""
+
+# Test ZIP file conversion
+Write-Host "4. Testing ZIP File Conversion..." -ForegroundColor Yellow
+if (Test-Path "sample_financial_data.zip") {
+    try {
+        $uri = "http://localhost:8080/api/v1/financial-data/convert"
+        $form = @{
+            file = Get-Item -Path "sample_financial_data.zip"
+        }
+        $response = Invoke-RestMethod -Uri $uri -Method Post -Form $form
+        
+        Write-Host "✓ ZIP Conversion Successful!" -ForegroundColor Green
+        Write-Host "  Filename: $($response.filename)" -ForegroundColor Cyan
+        Write-Host "  Is ZIP Archive: $($response.isZipArchive)" -ForegroundColor Cyan
+        Write-Host "  Total Files in ZIP: $($response.totalFilesInZip)" -ForegroundColor Cyan
+        Write-Host "  Successfully Processed: $($response.successfullyProcessedFiles)" -ForegroundColor Cyan
+        Write-Host "  Total Records: $($response.recordCount)" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "  Files in ZIP:" -ForegroundColor Yellow
+        foreach ($fileInfo in $response.zipFileContents) {
+            $status = if ($fileInfo.processed) { "✓" } else { "✗" }
+            Write-Host "    $status $($fileInfo.filename) - $($fileInfo.recordCount) records" -ForegroundColor $(if ($fileInfo.processed) { "Green" } else { "Red" })
+        }
+        Write-Host ""
+        Write-Host "Markdown Preview (first 500 characters):" -ForegroundColor Yellow
+        Write-Host $response.markdown.Substring(0, [Math]::Min(500, $response.markdown.Length)) -ForegroundColor White
+        Write-Host "..."
+        
+        # Save markdown to file
+        $response.markdown | Out-File -FilePath "output_zip_financial_report.md" -Encoding UTF8
+        Write-Host ""
+        Write-Host "✓ Full ZIP markdown saved to: output_zip_financial_report.md" -ForegroundColor Green
+    } catch {
+        Write-Host "✗ ZIP Conversion Failed: $($_.Exception.Message)" -ForegroundColor Red
+    }
+} else {
+    Write-Host "⚠ Sample ZIP file not found: sample_financial_data.zip" -ForegroundColor Yellow
+    Write-Host "  Run .\create_sample_zip.ps1 to create a sample ZIP file" -ForegroundColor Yellow
+}
+
+Write-Host ""
 Write-Host "=== Test Complete ===" -ForegroundColor Green

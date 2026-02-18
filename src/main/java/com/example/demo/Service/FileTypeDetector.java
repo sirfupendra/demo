@@ -17,7 +17,8 @@ public class FileTypeDetector {
         EXCEL_XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
         EXCEL_XLS("application/vnd.ms-excel", "xls"),
         JSON("application/json", "json"),
-        TEXT("text/plain", "txt");
+        TEXT("text/plain", "txt"),
+        ZIP("application/zip", "zip");
         
         private final String mimeType;
         private final String extension;
@@ -67,6 +68,12 @@ public class FileTypeDetector {
         // Try to detect JSON by content
         if (extension.equals("json") || contentType != null && contentType.contains("json")) {
             return FileType.JSON;
+        }
+        
+        // Check for ZIP file
+        if (extension.equals("zip") || 
+            (contentType != null && (contentType.equals("application/zip") || contentType.equals("application/x-zip-compressed")))) {
+            return FileType.ZIP;
         }
         
         throw new UnsupportedFileFormatException(

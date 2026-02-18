@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.FinancialDataRecord;
+import com.example.demo.dto.ZipFileInfo;
+import com.example.demo.dto.ZipProcessingResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -50,6 +52,70 @@ public class MarkdownConverterService {
         }
         
         log.info("Converted {} records to markdown format", records.size());
+        return markdown.toString();
+    }
+    
+    public String convertZipToMarkdown(ZipProcessingResult zipResult, String zipFilename) {
+        StringBuilder markdown = new StringBuilder();
+        
+        // Header
+        markdown.append("# Financial Data Report - ZIP Archive\n\n");
+        markdown.append(String.format("**Source ZIP File:** %s\n\n", zipFilename));
+        markdown.append(String.format("**Total Files in Archive:** %d\n\n", zipResult.getTotalFiles()));
+        markdown.append(String.format("**Successfully Processed:** %d\n\n", zipResult.getSuccessfullyProcessedFiles()));
+        markdown.append(String.format("**Total Records:** %d\n\n", zipResult.getAllRecords().size()));
+        markdown.append("---\n\n");
+        
+        // ZIP File Contents Summary
+        markdown.append("## ZIP Archive Contents\n\n");
+        markdown.append("| File Name | Type | Records | Status |\n");
+        markdown.append("|-----------|------|---------|--------|\n");
+        
+        for (ZipFileInfo fileInfo : zipResult.getFileInfos()) {
+            String status = fileInfo.isProcessed() ? "✓ Success" : "✗ Failed";
+            if (fileInfo.getErrorMessage() != null) {
+                status += " (" + fileInfo.getErrorMessage() + ")";
+            }
+            markdown.append(String.format("| %s | %s | %d | %s |\n",
+                fileInfo.getFilename(),
+                fileInfo.getFileType() != null ? fileInfo.getFileType() : "Unknown",
+                fileInfo.getRecordCount(),
+                status));
+        }
+        markdown.append("\n---\n\n");
+        
+        // Overall Summary
+        if (!zipResult.getAllRecords().isEmpty()) {
+            markdown.append("## Combined Summary\n\n");
+            markdown.append(generateSummary(zipResult.getAllRecords()));
+            markdown.append("\n---\n\n");
+            
+            // Combined Data Table
+            markdown.append("## All Financial Records\n\n");
+            markdown.append(generateTable(zipResult.getAllRecords()));
+            markdown.append("\n---\n\n");
+            
+            // Records by File
+            markdown.append("## Records by File\n\n");
+            int recordIndex = 1;
+            for (ZipFileInfo fileInfo : zipResult.getFileInfos()) {
+                if (fileInfo.isProcessed() && fileInfo.getRecordCount() > 0) {
+                    markdown.append(String.format("### File: %s (%d records)\n\n", 
+                        fileInfo.getFilename(), fileInfo.getRecordCount()));
+                    
+                    // Get records for this file (we'll need to track this)
+                    // For now, show a note that records are combined
+                    markdown.append(String.format("_Records from this file are included in the combined table above._\n\n"));
+                }
+            }
+        } else {
+            markdown.append("## No Records Processed\n\n");
+            markdown.append("No financial data records were successfully extracted from the ZIP archive.\n\n");
+        }
+        
+        log.info("Converted ZIP archive with {} files and {} total records to markdown format", 
+            zipResult.getTotalFiles(), zipResult.getAllRecords().size());
+        
         return markdown.toString();
     }
     
