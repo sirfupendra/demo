@@ -63,29 +63,35 @@ Expected response: `Financial Data API is running`
 ```bash
 curl -X POST http://localhost:8080/api/v1/financial-data/convert \
   -F "file=@path/to/your/financial_data.csv" \
-  -H "Content-Type: multipart/form-data"
+  -H "Content-Type: multipart/form-data" \
+  -o financial_report.md
 ```
 
 **For Excel file:**
 ```bash
 curl -X POST http://localhost:8080/api/v1/financial-data/convert \
   -F "file=@path/to/your/financial_data.xlsx" \
-  -H "Content-Type: multipart/form-data"
+  -H "Content-Type: multipart/form-data" \
+  -o financial_report.md
 ```
 
 **For JSON file:**
 ```bash
 curl -X POST http://localhost:8080/api/v1/financial-data/convert \
   -F "file=@path/to/your/financial_data.json" \
-  -H "Content-Type: multipart/form-data"
+  -H "Content-Type: multipart/form-data" \
+  -o financial_report.md
 ```
 
 **For ZIP file containing multiple files:**
 ```bash
 curl -X POST http://localhost:8080/api/v1/financial-data/convert \
   -F "file=@path/to/your/financial_data.zip" \
-  -H "Content-Type: multipart/form-data"
+  -H "Content-Type: multipart/form-data" \
+  -o financial_report.md
 ```
+
+**Note**: The `-o` flag saves the downloaded markdown file. Without it, the content will be printed to stdout.
 
 #### Using PowerShell (Windows)
 
@@ -95,7 +101,18 @@ $filePath = "C:\path\to\your\financial_data.csv"
 $form = @{
     file = Get-Item -Path $filePath
 }
-Invoke-RestMethod -Uri $uri -Method Post -Form $form
+$response = Invoke-WebRequest -Uri $uri -Method Post -Form $form
+
+# Extract filename from Content-Disposition header
+$contentDisposition = $response.Headers['Content-Disposition']
+$filename = "financial_report.md"
+if ($contentDisposition -match 'filename="([^"]+)"') {
+    $filename = $matches[1]
+}
+
+# Save the downloaded file
+$response.Content | Out-File -FilePath $filename -Encoding UTF8
+Write-Host "File saved as: $filename"
 ```
 
 #### Using Postman
@@ -108,58 +125,39 @@ Invoke-RestMethod -Uri $uri -Method Post -Form $form
 6. Add a key named `file` and change type to **File**
 7. Select your financial data file
 8. Click **Send**
+9. The response will be a downloadable markdown file - click **Send and Download** to save it automatically
 
 ## Step 4: Understanding the Response
 
-### Single File Response
+The API returns a **downloadable markdown file** (.md) instead of JSON. The response includes:
 
-The API returns a JSON response with the following structure:
+- **Content-Type**: `text/markdown; charset=utf-8`
+- **Content-Disposition**: `attachment; filename="[filename]_report_[timestamp].md"`
+- **Body**: The markdown file content
 
-```json
-{
-  "markdown": "# Financial Data Report\n\n...",
-  "filename": "financial_data.csv",
-  "recordCount": 10,
-  "processedAt": "2026-02-18T10:30:00",
-  "fileType": "text/csv",
-  "status": "SUCCESS",
-  "isZipArchive": false
-}
+### Response Headers
+
+```
+Content-Type: text/markdown; charset=utf-8
+Content-Disposition: attachment; filename="financial_data_report_20260218_103045.md"
+Content-Length: [file size in bytes]
 ```
 
-### ZIP File Response
+### File Naming Convention
 
-When uploading a ZIP file, the response includes additional information:
+The downloaded markdown file follows this naming pattern:
+- **Single files**: `[original_filename]_report_[timestamp].md`
+  - Example: `financial_data.csv` → `financial_data_report_20260218_103045.md`
+- **ZIP files**: `[zip_filename]_report_[timestamp].md`
+  - Example: `financial_data.zip` → `financial_data_report_20260218_103045.md`
 
-```json
-{
-  "markdown": "# Financial Data Report - ZIP Archive\n\n...",
-  "filename": "financial_data.zip",
-  "recordCount": 25,
-  "processedAt": "2026-02-18T10:30:00",
-  "fileType": "application/zip",
-  "status": "SUCCESS",
-  "isZipArchive": true,
-  "totalFilesInZip": 3,
-  "successfullyProcessedFiles": 3,
-  "zipFileContents": [
-    {
-      "filename": "data1.csv",
-      "fileType": "CSV",
-      "recordCount": 10,
-      "processed": true
-    },
-    {
-      "filename": "data2.xlsx",
-      "fileType": "EXCEL_XLSX",
-      "recordCount": 15,
-      "processed": true
-    }
-  ]
-}
-```
+The timestamp format is `yyyyMMdd_HHmmss` to ensure unique filenames.
 
-The `markdown` field contains the converted markdown format of your financial data. For ZIP files, it includes a summary of all files and combined records.
+### Download Behavior
+
+- **Browser**: The file will automatically download
+- **cURL**: Use `-O` or `-o filename.md` to save the file
+- **PowerShell**: The file content is returned and can be saved to disk
 
 ## Supported File Formats
 

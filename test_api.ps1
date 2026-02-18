@@ -24,21 +24,27 @@ if (Test-Path "sample_financial_data.csv") {
         $form = @{
             file = Get-Item -Path "sample_financial_data.csv"
         }
-        $response = Invoke-RestMethod -Uri $uri -Method Post -Form $form
+        $response = Invoke-WebRequest -Uri $uri -Method Post -Form $form
+        
+        # Extract filename from Content-Disposition header
+        $contentDisposition = $response.Headers['Content-Disposition']
+        $filename = "output_financial_report.md"
+        if ($contentDisposition -match 'filename="([^"]+)"') {
+            $filename = $matches[1]
+        }
+        
+        # Save the downloaded file
+        $response.Content | Out-File -FilePath $filename -Encoding UTF8
         
         Write-Host "✓ CSV Conversion Successful!" -ForegroundColor Green
-        Write-Host "  Filename: $($response.filename)" -ForegroundColor Cyan
-        Write-Host "  Records Processed: $($response.recordCount)" -ForegroundColor Cyan
-        Write-Host "  Status: $($response.status)" -ForegroundColor Cyan
+        Write-Host "  Downloaded file: $filename" -ForegroundColor Cyan
+        Write-Host "  File size: $($response.Content.Length) bytes" -ForegroundColor Cyan
         Write-Host ""
         Write-Host "Markdown Preview (first 500 characters):" -ForegroundColor Yellow
-        Write-Host $response.markdown.Substring(0, [Math]::Min(500, $response.markdown.Length)) -ForegroundColor White
+        Write-Host $response.Content.Substring(0, [Math]::Min(500, $response.Content.Length)) -ForegroundColor White
         Write-Host "..."
-        
-        # Save markdown to file
-        $response.markdown | Out-File -FilePath "output_financial_report.md" -Encoding UTF8
         Write-Host ""
-        Write-Host "✓ Full markdown saved to: output_financial_report.md" -ForegroundColor Green
+        Write-Host "✓ Markdown file saved: $filename" -ForegroundColor Green
     } catch {
         Write-Host "✗ CSV Conversion Failed: $($_.Exception.Message)" -ForegroundColor Red
     }
@@ -56,12 +62,21 @@ if (Test-Path "sample_financial_data.json") {
         $form = @{
             file = Get-Item -Path "sample_financial_data.json"
         }
-        $response = Invoke-RestMethod -Uri $uri -Method Post -Form $form
+        $response = Invoke-WebRequest -Uri $uri -Method Post -Form $form
+        
+        # Extract filename from Content-Disposition header
+        $contentDisposition = $response.Headers['Content-Disposition']
+        $filename = "output_financial_report.json.md"
+        if ($contentDisposition -match 'filename="([^"]+)"') {
+            $filename = $matches[1]
+        }
+        
+        # Save the downloaded file
+        $response.Content | Out-File -FilePath $filename -Encoding UTF8
         
         Write-Host "✓ JSON Conversion Successful!" -ForegroundColor Green
-        Write-Host "  Filename: $($response.filename)" -ForegroundColor Cyan
-        Write-Host "  Records Processed: $($response.recordCount)" -ForegroundColor Cyan
-        Write-Host "  Status: $($response.status)" -ForegroundColor Cyan
+        Write-Host "  Downloaded file: $filename" -ForegroundColor Cyan
+        Write-Host "  File size: $($response.Content.Length) bytes" -ForegroundColor Cyan
     } catch {
         Write-Host "✗ JSON Conversion Failed: $($_.Exception.Message)" -ForegroundColor Red
     }
@@ -79,29 +94,27 @@ if (Test-Path "sample_financial_data.zip") {
         $form = @{
             file = Get-Item -Path "sample_financial_data.zip"
         }
-        $response = Invoke-RestMethod -Uri $uri -Method Post -Form $form
+        $response = Invoke-WebRequest -Uri $uri -Method Post -Form $form
+        
+        # Extract filename from Content-Disposition header
+        $contentDisposition = $response.Headers['Content-Disposition']
+        $filename = "output_zip_financial_report.md"
+        if ($contentDisposition -match 'filename="([^"]+)"') {
+            $filename = $matches[1]
+        }
+        
+        # Save the downloaded file
+        $response.Content | Out-File -FilePath $filename -Encoding UTF8
         
         Write-Host "✓ ZIP Conversion Successful!" -ForegroundColor Green
-        Write-Host "  Filename: $($response.filename)" -ForegroundColor Cyan
-        Write-Host "  Is ZIP Archive: $($response.isZipArchive)" -ForegroundColor Cyan
-        Write-Host "  Total Files in ZIP: $($response.totalFilesInZip)" -ForegroundColor Cyan
-        Write-Host "  Successfully Processed: $($response.successfullyProcessedFiles)" -ForegroundColor Cyan
-        Write-Host "  Total Records: $($response.recordCount)" -ForegroundColor Cyan
-        Write-Host ""
-        Write-Host "  Files in ZIP:" -ForegroundColor Yellow
-        foreach ($fileInfo in $response.zipFileContents) {
-            $status = if ($fileInfo.processed) { "✓" } else { "✗" }
-            Write-Host "    $status $($fileInfo.filename) - $($fileInfo.recordCount) records" -ForegroundColor $(if ($fileInfo.processed) { "Green" } else { "Red" })
-        }
+        Write-Host "  Downloaded file: $filename" -ForegroundColor Cyan
+        Write-Host "  File size: $($response.Content.Length) bytes" -ForegroundColor Cyan
         Write-Host ""
         Write-Host "Markdown Preview (first 500 characters):" -ForegroundColor Yellow
-        Write-Host $response.markdown.Substring(0, [Math]::Min(500, $response.markdown.Length)) -ForegroundColor White
+        Write-Host $response.Content.Substring(0, [Math]::Min(500, $response.Content.Length)) -ForegroundColor White
         Write-Host "..."
-        
-        # Save markdown to file
-        $response.markdown | Out-File -FilePath "output_zip_financial_report.md" -Encoding UTF8
         Write-Host ""
-        Write-Host "✓ Full ZIP markdown saved to: output_zip_financial_report.md" -ForegroundColor Green
+        Write-Host "✓ ZIP markdown file saved: $filename" -ForegroundColor Green
     } catch {
         Write-Host "✗ ZIP Conversion Failed: $($_.Exception.Message)" -ForegroundColor Red
     }

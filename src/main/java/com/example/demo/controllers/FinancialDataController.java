@@ -1,19 +1,23 @@
 package com.example.demo.controllers;
 
-import com.example.demo.dto.MarkdownResponse;
 import com.example.demo.dto.ZipProcessingResult;
 import com.example.demo.service.FileTypeDetector;
 import com.example.demo.service.FinancialDataService;
 import com.example.demo.service.MarkdownConverterService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * REST Controller for financial data file processing and markdown conversion
@@ -42,10 +46,11 @@ public class FinancialDataController {
      * Supports single files (CSV, Excel, JSON, TXT) and ZIP archives containing multiple files
      * 
      * @param file The financial data file (CSV, Excel, JSON, TXT, or ZIP)
-     * @return MarkdownResponse containing the converted markdown
+     * @return Downloadable markdown file (.md)
      */
-    @PostMapping(value = "/convert", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MarkdownResponse> convertToMarkdown(
+    @PostMapping(value = "/convert", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, 
+                 produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> convertToMarkdown(
             @RequestParam("file") MultipartFile file) {
         
         log.info("Received file upload request: {}", file.getOriginalFilename());
@@ -59,6 +64,9 @@ public class FinancialDataController {
             file.getOriginalFilename() : "unknown";
         
         try {
+            String markdown;
+            String outputFilename;
+            
             // Check if it's a ZIP file
             FileTypeDetector.FileType fileType = fileTypeDetector.detectFileType(file);
             
@@ -67,48 +75,48 @@ public class FinancialDataController {
                 ZipProcessingResult zipResult = financialDataService.processZipFile(file);
                 
                 // Convert ZIP to markdown
-                String markdown = markdownConverterService.convertZipToMarkdown(zipResult, filename);
+                markdown = markdownConverterService.convertZipToMarkdown(zipResult, filename);
                 
-                // Build response for ZIP
-                MarkdownResponse response = MarkdownResponse.builder()
-                    .markdown(markdown)
-                    .filename(filename)
-                    .recordCount(zipResult.getAllRecords().size())
-                    .processedAt(LocalDateTime.now())
-                    .fileType(file.getContentType())
-                    .status("SUCCESS")
-                    .isZipArchive(true)
-                    .zipFileContents(zipResult.getFileInfos())
-                    .totalFilesInZip(zipResult.getTotalFiles())
-                    .successfullyProcessedFiles(zipResult.getSuccessfullyProcessedFiles())
-                    .build();
+                // Generate output filename
+                String baseName = filename.replaceAll("\\.[^.]*$", ""); // Remove extension
+                outputFilename = String.format("%s_report_%s.md", 
+                    baseName, 
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")));
                 
                 log.info("Successfully processed ZIP file: {} with {} files and {} total records", 
                     filename, zipResult.getTotalFiles(), zipResult.getAllRecords().size());
-                
-                return ResponseEntity.status(HttpStatus.OK).body(response);
             } else {
                 // Process single file
                 var records = financialDataService.processFile(file);
                 
                 // Convert to markdown
-                String markdown = markdownConverterService.convertToMarkdown(records, filename);
+                markdown = markdownConverterService.convertToMarkdown(records, filename);
                 
-                // Build response
-                MarkdownResponse response = MarkdownResponse.builder()
-                    .markdown(markdown)
-                    .filename(filename)
-                    .recordCount(records.size())
-                    .processedAt(LocalDateTime.now())
-                    .fileType(file.getContentType())
-                    .status("SUCCESS")
-                    .isZipArchive(false)
-                    .build();
+                // Generate output filename
+                String baseName = filename.replaceAll("\\.[^.]*$", ""); // Remove extension
+                outputFilename = String.format("%s_report_%s.md", 
+                    baseName, 
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")));
                 
                 log.info("Successfully processed file: {} with {} records", filename, records.size());
-                
-                return ResponseEntity.status(HttpStatus.OK).body(response);
             }
+            
+            // Convert markdown string to bytes
+            byte[] markdownBytes = markdown.getBytes(StandardCharsets.UTF_8);
+            ByteArrayResource resource = new ByteArrayResource(markdownBytes);
+            
+            // Set headers for file download
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, 
+                String.format("attachment; filename=\"%s\"", outputFilename));
+            headers.add(HttpHeaders.CONTENT_TYPE, "text/markdown; charset=utf-8");
+            headers.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(markdownBytes.length));
+            
+            return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(markdownBytes.length)
+                .contentType(MediaType.parseMediaType("text/markdown; charset=utf-8"))
+                .body(resource);
             
         } catch (Exception e) {
             log.error("Error processing file: {}", filename, e);
